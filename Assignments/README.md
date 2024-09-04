@@ -1,0 +1,1 @@
+Assignments will typically also be available in Gradescope as a template.
