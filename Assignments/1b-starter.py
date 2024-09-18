@@ -1,5 +1,6 @@
 import hashlib
 from typing import List, Optional
+from nacl.signing import SigningKey, VerifyKey
 
 DIFFICULTY = 0x07FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 
@@ -20,11 +21,12 @@ class Output:
 
     # Serialize the output to bytes
     def to_bytes(self) -> bytes:
-        return self.value.to_bytes() + bytes.fromhex(self.pub_key)
+        return self.value.to_bytes(4, 'big', False) + bytes.fromhex(self.pub_key)
 
 class Input:
     """
-    A transaction input.
+    A transaction input. The number refers to the transaction number where the
+    input was generated (see `Transaction.update_number()`).
     """
 
     def __init__(self, output: Output, number: str):
@@ -38,33 +40,34 @@ class Input:
 
 class Transaction:
     """
-    A transaction in a block.
+    A transaction in a block. A signature is the hex-encoded string that
+    represents the bytes of the signature.
     """
 
-    def __init__(self, inputs: List[Input], outputs: List[Output], sigs: List[str]):
+    def __init__(self, inputs: List[Input], outputs: List[Output], sig_hex: str):
         self.inputs = inputs
         self.outputs = outputs
-        self.sigs = sigs
+        self.sig_hex = sig_hex
 
         self.update_number()
 
-    # Set the transaction number to be SHA256 of self.to_bytes()
+    # Set the transaction number to be SHA256 of self.to_bytes().
     def update_number(self):
         # TODO
         pass
 
-    # Get the hash of the transaction before signatures; signers need to sign
+    # Get the bytes of the transaction before signatures; signers need to sign
     # this value!
-    def hash_to_sign(self) -> str:
-        m = hashlib.sha256()
+    def bytes_to_sign(self) -> str:
+        m = b''
 
         for i in self.inputs:
-            m.update(i.to_bytes())
+            m += i.to_bytes()
         
         for o in self.outputs:
-            m.update(o.to_bytes())
+            m += o.to_bytes()
 
-        return m.hexdigest()
+        return m.hex()
     
     def to_bytes(self) -> str:
         m = b''
@@ -75,14 +78,14 @@ class Transaction:
         for o in self.outputs:
             m += o.to_bytes()
 
-        for s in self.sigs:
-            m += bytes.fromhex(s)
+        m += bytes.fromhex(self.sig_hex)
 
         return m.hex()
     
 class Block:
     """
-    A block on a blockchain.
+    A block on a blockchain. Prev is a string that contains the hex-encoded hash
+    of the previous block.
     """
 
     def __init__(self, prev: str, tx: Transaction, nonce: Optional[str]):
@@ -91,12 +94,13 @@ class Block:
         self.prev = prev
 
     # Find a valid nonce such that the hash below is less than the DIFFICULTY
-    # constant 
+    # constant. Record the nonce as a hex-encoded string (bytearray.hex(), see
+    # Transaction.to_bytes() for an example).
     def mine(self):
         # TODO
         pass 
     
-    # Hash the block
+    # Hash the block.
     def hash(self) -> str:
         m = hashlib.sha256()
 
@@ -108,7 +112,8 @@ class Block:
     
 class Blockchain:
     """
-    A blockchain.
+    A blockchain. This class is provided for convenience only; the autograder
+    will not call this class.
     """
     
     def __init__(self, chain: List[Block], utxos: List[str]):
@@ -119,29 +124,35 @@ class Blockchain:
         # TODO
         pass
 
-class State:
+class Node:
     """
     All chains that the node is currently aware of.
     """
     def __init__(self):
+        # We will not access this field, you are free change it if needed.
         self.chains = []
 
-    # Create a new chain with the given genesis block
+    # Create a new chain with the given genesis block. The autograder will give
+    # you the genesis block.
     def new_chain(self, genesis: Block):
         # TODO
         pass
 
-    # Attempt to append a block broadcast on the network
+    # Attempt to append a block broadcast on the network; return true if it is
+    # possible to add (e.g. could be a fork). Return false otherwise.
     def append(self, block: Block) -> bool:
         # TODO
         pass
 
-    # Build a block on the longest chain you are currently tracking
-    def build_block(self, tx: Transaction):
+    # Build a block on the longest chain you are currently tracking. If the
+    # transaction is invalid (e.g. double spend), return None.
+    def build_block(self, tx: Transaction) -> Optional[Block]:
         # TODO
         pass
 
-# Build and sign a transaction with the given inputs and outputs
-def build_transaction(inputs, outputs, signing_keys) -> Transaction:
+# Build and sign a transaction with the given inputs and outputs. If it is
+# impossible to build a valid transaction given the inputs and outputs, you
+# should return None. Do not verify that the inputs are unspent.
+def build_transaction(inputs: List[Input], outputs: List[Output], signing_key: SigningKey) -> Optional[Transaction]:
     # TODO
     pass
