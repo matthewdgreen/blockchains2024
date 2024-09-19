@@ -21,7 +21,7 @@ class Output:
 
     # Serialize the output to bytes
     def to_bytes(self) -> bytes:
-        return self.value.to_bytes(4, 'big', False) + bytes.fromhex(self.pub_key)
+        return self.value.to_bytes(4, 'big', signed=False) + bytes.fromhex(self.pub_key)
 
 class Input:
     """
